@@ -1,0 +1,7 @@
+CREATE TABLE Produtos (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nome NVACHAR(255),
+    descricao NVACHAR(1000),
+    preco DECIMAL(18,2),
+    imagem_url NVACHAR(2083)
+)

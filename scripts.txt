@@ -1,0 +1,73 @@
+# Variáveis
+RESOURCE_GROUP="LAB001"
+LOCATION="eastus"
+SQL_SERVER_NAME="sqllab001dbdeveastus"
+SQL_ADMIN_USER="sqladmin"
+SQL_ADMIN_PASS="YourStrong!Passw0rd"
+SQL_DB_NAME="dbsrvdeveastuslab001"
+ENV_TAG="Development"
+
+# Criar grupo de recursos
+az group create \
+  --name $RESOURCE_GROUP \
+  --location $LOCATION
+
+# Criar servidor SQL com autenticação híbrida (Entra ID + SQL Auth)
+az sql server create \
+  --name $SQL_SERVER_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --admin-user $SQL_ADMIN_USER \
+  --admin-password $SQL_ADMIN_PASS \
+  --enable-ad-only-auth true
+
+# Associar o Azure AD admin (usuário atual com permissão Entra)
+az sql server ad-admin create \
+  --resource-group $RESOURCE_GROUP \
+  --server-name $SQL_SERVER_NAME \
+  --display-name "$(az ad signed-in-user show --query displayName -o tsv)" \
+  --object-id "$(az ad signed-in-user show --query id -o tsv)"
+
+# Criar banco de dados Serverless com performance otimizada para desenvolvimento
+az sql db create \
+  --resource-group $RESOURCE_GROUP \
+  --server $SQL_SERVER_NAME \
+  --name $SQL_DB_NAME \
+  --edition GeneralPurpose \
+  --compute-model Serverless \
+  --family Gen5 \
+  --capacity 2 \
+  --auto-pause-delay 60 \
+  --min-capacity 0.5 \
+  --tags workload=$ENV_TAG env=dev purpose=development
+
+# Exibir saída resumida
+az sql db show \
+  --resource-group $RESOURCE_GROUP \
+  --server $SQL_SERVER_NAME \
+  --name $SQL_DB_NAME \
+  --output table
+
+
+# Variáveis
+RESOURCE_GROUP="LAB001"
+LOCATION="eastus"
+STORAGE_ACCOUNT_NAME="stadevlab0001eastus001"
+ENV_TAG="Development"
+
+# Criar a Storage Account com suporte ao Data Lake Storage Gen2 (Hierarchical Namespace)
+az storage account create \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --sku Standard_LRS \
+  --kind StorageV2 \
+  --enable-hierarchical-namespace true \
+  --allow-blob-public-access true \
+  --tags workload=$ENV_TAG env=dev purpose=analytics
+
+# Verificar se a criação foi bem-sucedida
+az storage account show \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --output table
